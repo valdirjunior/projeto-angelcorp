@@ -6,6 +6,27 @@ O projeto utiliza uma arquitetura em três camadas, com frontend, backend e banc
 
 ---
 
+## Repositório
+
+```text
+https://github.com/valdirjunior/projeto-angeldesk.git
+```
+
+Para clonar o projeto:
+
+```bash
+git clone https://github.com/valdirjunior/projeto-angeldesk.git
+cd projeto-angeldesk
+```
+
+Depois de clonar, dê permissão de execução aos scripts:
+
+```bash
+chmod +x start.sh stop.sh start-k8s.sh stop-k8s.sh scripts/*.sh
+```
+
+---
+
 ## Arquitetura
 
 A aplicação é composta por três serviços principais:
@@ -56,7 +77,7 @@ Frontend Nginx
 ## Estrutura do projeto
 
 ```text
-projeto-angelcorp/
+projeto-angeldesk/
 ├── backend/
 │   ├── Dockerfile
 │   ├── package.json
@@ -77,6 +98,10 @@ projeto-angelcorp/
 ├── k8s/
 ├── scripts/
 ├── docker-compose.yml
+├── start.sh
+├── stop.sh
+├── start-k8s.sh
+├── stop-k8s.sh
 └── README.md
 ```
 
@@ -114,32 +139,16 @@ http://angeldesk.local/api/tickets
 
 ## Pré-requisitos
 
-Para executar o projeto, é necessário ter instalado:
+Para executar o projeto com Docker Compose, é necessário ter instalado:
 
 - Docker Desktop;
 - Docker Compose;
-- WSL ou terminal Linux;
+- WSL ou terminal Linux.
+
+Para executar a versão com Kubernetes, também é necessário ter instalado:
+
 - kubectl;
 - Kind.
-
-Para a execução com Docker Compose, basta ter o Docker Desktop em funcionamento.
-
-Para a execução com Kubernetes, também é necessário que o `kind` e o `kubectl` estejam instalados e configurados.
-
----
-
-## Clonando o projeto
-
-```bash
-git clone <https://github.com/valdirjunior/projeto-angelcorp.git>
-cd projeto-angelcorp
-```
-
-Depois de clonar, garanta permissão de execução para os scripts:
-
-```bash
-chmod +x scripts/*.sh
-```
 
 ---
 
@@ -171,26 +180,53 @@ echo "127.0.0.1 angeldesk.local" | sudo tee -a /etc/hosts
 
 ---
 
-## Execução com Docker Compose
+# Execução rápida com Docker Compose
 
-Antes de executar, certifique-se de que o Docker Desktop está iniciado.
-
-Para subir a aplicação:
+A forma principal de executar o projeto é usando o script simplificado:
 
 ```bash
-./scripts/compose-up.sh
+./start.sh
 ```
 
-A aplicação ficará disponível em:
+Esse comando:
+
+1. prepara o ambiente local;
+2. verifica se existe Nginx local usando a porta 80;
+3. para temporariamente o Nginx local, se necessário;
+4. executa o Docker Compose;
+5. sobe frontend, backend e banco de dados;
+6. disponibiliza a aplicação em `http://angeldesk.local`.
+
+Após iniciar, acesse:
 
 ```text
 http://angeldesk.local
 ```
 
-A API poderá ser testada em:
+A API pode ser testada em:
 
 ```text
 http://angeldesk.local/api/tickets
+```
+
+Para parar a aplicação:
+
+```bash
+./stop.sh
+```
+
+Esse comando para os containers e restaura o Nginx local caso ele estivesse ativo antes da execução.
+
+---
+
+## Execução detalhada com Docker Compose
+
+Também é possível usar diretamente os scripts internos.
+
+Para subir a aplicação:
+
+```bash
+./scripts/compose-up.sh
 ```
 
 Para validar rapidamente a execução:
@@ -219,20 +255,52 @@ db/init/init.sql
 
 ---
 
-## Observação sobre Nginx local
+## Scripts auxiliares do ambiente local
 
-Como a aplicação utiliza a porta 80 para permitir o acesso por `angeldesk.local`, pode haver conflito caso exista um Nginx local ativo no WSL/Ubuntu.
-
-Para evitar esse problema, os scripts de execução verificam se existe um Nginx local ocupando a porta 80. Caso exista, ele é parado temporariamente antes da aplicação subir.
-
-Quando a aplicação é encerrada pelo script `compose-down.sh`, o Nginx local é restaurado caso estivesse ativo anteriormente.
-
-Scripts relacionados:
+Os scripts abaixo são auxiliares e normalmente **não precisam ser executados manualmente**:
 
 ```bash
 ./scripts/prepare-host.sh
 ./scripts/restore-host.sh
 ```
+
+Eles são chamados automaticamente pelo fluxo principal:
+
+```text
+./start.sh
+   |
+   v
+./scripts/compose-up.sh
+   |
+   v
+./scripts/prepare-host.sh
+   |
+   v
+docker compose up --build -d
+```
+
+E ao parar:
+
+```text
+./stop.sh
+   |
+   v
+./scripts/compose-down.sh
+   |
+   v
+docker compose down
+   |
+   v
+./scripts/restore-host.sh
+```
+
+O objetivo desses scripts é lidar com conflitos de porta no ambiente local.
+
+Como a aplicação usa a porta 80 para permitir o acesso por `angeldesk.local`, pode haver conflito caso exista um Nginx local ativo no WSL/Ubuntu.
+
+O script `prepare-host.sh` verifica se existe um Nginx local ocupando a porta 80. Caso exista, ele é parado temporariamente antes da aplicação subir.
+
+O script `restore-host.sh` restaura o Nginx local caso ele estivesse ativo antes da execução.
 
 Caso queira verificar manualmente se existe algum processo utilizando a porta 80:
 
@@ -242,9 +310,45 @@ sudo ss -ltnp | grep ':80'
 
 ---
 
-## Execução com Kubernetes
+# Execução com Kubernetes
 
 O projeto também pode ser executado em Kubernetes usando Kind.
+
+A forma simplificada é:
+
+```bash
+./start-k8s.sh
+```
+
+Esse comando inicia o ambiente Kubernetes usando os scripts internos do projeto.
+
+Depois, para acessar a aplicação, execute o port-forward:
+
+```bash
+./scripts/k8s-port-forward.sh
+```
+
+A aplicação ficará disponível em:
+
+```text
+http://localhost:8081
+```
+
+A API poderá ser testada em:
+
+```text
+http://localhost:8081/api/tickets
+```
+
+Para parar/remover os recursos Kubernetes da aplicação:
+
+```bash
+./stop-k8s.sh
+```
+
+---
+
+## Execução detalhada com Kubernetes
 
 Para recriar o ambiente Kubernetes do zero:
 
@@ -268,22 +372,10 @@ Para subir sem remover o cluster existente:
 ./scripts/k8s-up.sh
 ```
 
-Para acessar a aplicação no Kubernetes, execute o port-forward:
+Para acessar a aplicação no Kubernetes:
 
 ```bash
 ./scripts/k8s-port-forward.sh
-```
-
-A aplicação ficará disponível em:
-
-```text
-http://localhost:8081
-```
-
-A API poderá ser testada em:
-
-```text
-http://localhost:8081/api/tickets
 ```
 
 Para verificar os recursos Kubernetes:
@@ -420,12 +512,16 @@ k8s/db-secret.yaml
 
 | Script | Função |
 |---|---|
+| `start.sh` | Atalho principal para subir a aplicação com Docker Compose |
+| `stop.sh` | Atalho principal para parar a aplicação com Docker Compose |
+| `start-k8s.sh` | Atalho principal para iniciar a versão Kubernetes |
+| `stop-k8s.sh` | Atalho principal para remover os recursos Kubernetes |
 | `compose-up.sh` | Prepara o host e sobe a aplicação com Docker Compose |
 | `compose-down.sh` | Para os containers e restaura o ambiente local |
 | `compose-reset.sh` | Remove containers e volume do banco, recriando tudo do zero |
 | `compose-check.sh` | Testa frontend e API no Docker Compose |
-| `prepare-host.sh` | Verifica e libera a porta 80 caso exista Nginx local ativo |
-| `restore-host.sh` | Restaura o Nginx local caso ele estivesse ativo antes |
+| `prepare-host.sh` | Script auxiliar chamado automaticamente antes do Compose subir |
+| `restore-host.sh` | Script auxiliar chamado automaticamente após o Compose parar |
 | `k8s-build-images.sh` | Constrói e carrega as imagens Docker no Kind |
 | `k8s-up.sh` | Sobe os recursos da aplicação no Kubernetes |
 | `k8s-reset.sh` | Recria o cluster Kind e sobe tudo do zero |
@@ -443,7 +539,7 @@ k8s/db-secret.yaml
 Subir a aplicação:
 
 ```bash
-./scripts/compose-up.sh
+./start.sh
 ```
 
 Validar:
@@ -461,17 +557,17 @@ curl http://angeldesk.local/api/tickets
 Parar:
 
 ```bash
-./scripts/compose-down.sh
+./stop.sh
 ```
 
 ---
 
 ### Kubernetes
 
-Recriar o cluster e subir tudo do zero:
+Iniciar ambiente Kubernetes:
 
 ```bash
-./scripts/k8s-reset.sh
+./start-k8s.sh
 ```
 
 Abrir o acesso local ao frontend:
@@ -490,6 +586,12 @@ Testar manualmente a API:
 
 ```bash
 curl http://localhost:8081/api/tickets
+```
+
+Parar/remover recursos:
+
+```bash
+./stop-k8s.sh
 ```
 
 ---
@@ -520,26 +622,44 @@ Para replicar o projeto em outra máquina:
 
 1. Instale Docker Desktop.
 2. Instale Kind e kubectl, caso deseje executar a versão Kubernetes.
-3. Clone este repositório.
-4. Entre na pasta do projeto.
-5. Dê permissão de execução aos scripts:
+3. Clone este repositório:
 
 ```bash
-chmod +x scripts/*.sh
+git clone https://github.com/valdirjunior/projeto-angeldesk.git
+cd projeto-angeldesk
 ```
 
-6. Configure o domínio local `angeldesk.local` no arquivo `hosts`, se desejar usar o acesso por nome.
-7. Execute com Docker Compose:
+4. Dê permissão de execução aos scripts:
 
 ```bash
-./scripts/compose-up.sh
+chmod +x start.sh stop.sh start-k8s.sh stop-k8s.sh scripts/*.sh
+```
+
+5. Configure o domínio local `angeldesk.local` no arquivo `hosts`, se desejar usar o acesso por nome.
+
+6. Execute com Docker Compose:
+
+```bash
+./start.sh
+```
+
+7. Acesse:
+
+```text
+http://angeldesk.local
 ```
 
 Ou execute com Kubernetes:
 
 ```bash
-./scripts/k8s-reset.sh
+./start-k8s.sh
 ./scripts/k8s-port-forward.sh
+```
+
+E acesse:
+
+```text
+http://localhost:8081
 ```
 
 ---
