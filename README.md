@@ -131,7 +131,7 @@ Para a execução com Kubernetes, também é necessário que o `kind` e o `kubec
 ## Clonando o projeto
 
 ```bash
-git clone <https://github.com/valdirjunior/projeto-angelcorp.githttps://github.com/valdirjunior/projeto-angelcorp.git>
+git clone <https://github.com/valdirjunior/projeto-angelcorp.git>
 cd projeto-angelcorp
 ```
 
