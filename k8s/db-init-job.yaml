@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: Job
+
+metadata:
+  name: db-init-job
+
+spec:
+  template:
+    spec:
+      containers:
+        - name: db-init
+
+          image: postgres:16
+
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: POSTGRES_PASSWORD
+
+          command:
+            - sh
+            - -c
+            - |
+              psql -h db-service -U angeluser -d angeldesk <<EOF
+
+              CREATE TABLE IF NOT EXISTS tickets (
+                  id SERIAL PRIMARY KEY,
+                  titulo VARCHAR(255) NOT NULL,
+                  descricao TEXT NOT NULL,
+                  status VARCHAR(50) NOT NULL,
+                  prioridade VARCHAR(50) NOT NULL,
+                  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+              );
+
+              INSERT INTO tickets (
+                  titulo,
+                  descricao,
+                  status,
+                  prioridade
+              )
+              SELECT
+                  'Primeiro Ticket',
+                  'Banco inicializado automaticamente',
+                  'ABERTO',
+                  'MEDIA'
+              WHERE NOT EXISTS (
+                  SELECT 1 FROM tickets WHERE titulo = 'Primeiro Ticket'
+              );
+
+              EOF
+
+      restartPolicy: Never
+
+  backoffLimit: 2

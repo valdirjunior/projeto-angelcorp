@@ -1,27 +1,42 @@
+# Node.js
 node_modules/
 npm-debug.log
+yarn-error.log
+pnpm-debug.log
 
+# Builds
+dist/
+build/
+.vite/
+
+# Environment files
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-dist/
-.vite/
+# Runtime local do projeto
+.runtime/
 
-logs
+# Logs
+logs/
 *.log
 
+# Coverage
+coverage/
+
+# Docker / volumes locais
 docker-data/
 postgres_data/
 
-.vscode/
-
+# Sistema operacional
 .DS_Store
 Thumbs.db
 
-coverage/
+# VS Code
+.vscode/
 
+# Temporários
 tmp/
 temp/
