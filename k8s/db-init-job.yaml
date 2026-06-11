@@ -42,7 +42,7 @@ spec:
               )
               SELECT
                   'Primeiro Ticket',
-                  'Banco inicializado automaticamente',
+                  'Banco inicializado com sucesso.',
                   'ABERTO',
                   'MEDIA'
               WHERE NOT EXISTS (

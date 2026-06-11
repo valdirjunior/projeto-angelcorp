@@ -16,7 +16,7 @@ INSERT INTO tickets (
 VALUES
 (
     'Primeiro Ticket',
-    'Banco inicializado automaticamente',
+    'Banco inicializado com sucesso.',
     'ABERTO',
     'MEDIA'
 );
